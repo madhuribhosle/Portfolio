@@ -1,326 +1,27 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Menu, X, Sun, Moon, ArrowRight, Download, Mail, Linkedin, Instagram, Aperture, Briefcase, Zap, Trello, Package, Code } from 'lucide-react';
-
-// --- CONFIGURATION ---
-const THEME_ACCENT = 'text-[#007AFF] dark:text-[#50c878]'; // Electric Blue | Neon Green for Dark Mode
-const PRIMARY_ACCENT = 'bg-[#007AFF] hover:bg-[#005bb5] dark:bg-[#50c878] dark:hover:bg-[#3d9a5b] text-white transition-all duration-300';
-const BG_LIGHT = 'bg-[#FCFCF7]'; // Warm Off-White
-const BG_DARK = 'bg-[#1A1A1A]'; // Deep Charcoal
-const TEXT_PRIMARY = 'text-gray-900 dark:text-gray-50';
-const TEXT_SECONDARY = 'text-gray-600 dark:text-gray-400';
-const SECTION_IDS = ['hero', 'work', 'about', 'skills', 'process', 'playground', 'testimonials', 'contact'];
-
-// Utility function for smooth scrolling
-const scrollToSection = (id) => {
-    document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
-};
-
-// Custom Hook for Section Observation (Active Nav Highlighting)
-const useActiveSection = (sectionIds) => {
-    const [activeId, setActiveId] = useState(sectionIds[0]);
-
-    useEffect(() => {
-        const observer = new IntersectionObserver(
-            (entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        setActiveId(entry.target.id);
-                    }
-                });
-            },
-            {
-                rootMargin: '-30% 0px -70% 0px', // Adjusted to trigger closer to the center of the viewport
-                threshold: 0,
-            }
-        );
-
-        sectionIds.forEach(id => {
-            const element = document.getElementById(id);
-            if (element) {
-                observer.observe(element);
-            }
-        });
-
-        return () => {
-            sectionIds.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    observer.unobserve(element);
-                }
-            });
-        };
-    }, [sectionIds]);
-
-    return activeId;
-};
-
-// --- COMPONENTS ---
-
-// 1. Dark Mode Toggle
-const DarkModeToggle = ({ isDark, toggleDark }) => (
-    <button
-        onClick={toggleDark}
-        aria-label="Toggle dark mode"
-        className={`p-2 rounded-full transition-colors duration-300 ${TEXT_PRIMARY} hover:bg-gray-200 dark:hover:bg-gray-800`}
-    >
-        {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-    </button>
-);
-
-// 2. Navigation
-const HeaderNav = ({ isDark, toggleDark, activeId, toggleMenu, isMenuOpen }) => {
-    const navItems = [
-        { name: 'Work', id: 'work' },
-        { name: 'About', id: 'about' },
-        { name: 'Skills', id: 'skills' },
-        { name: 'Process', id: 'process' },
-        { name: 'Playground', id: 'playground' },
-        { name: 'Testimonials', id: 'testimonials' },
-        { name: 'Contact', id: 'contact' },
-    ];
-
-    const NavLink = ({ item }) => (
-        <button
-            onClick={() => { scrollToSection(item.id); if (isMenuOpen) toggleMenu(); }}
-            className={`
-                px-3 py-1 text-sm font-medium transition-all duration-300
-                hover:text-gray-900 dark:hover:text-white
-                ${activeId === item.id 
-                    ? `${THEME_ACCENT} font-bold border-b-2 border-current`
-                    : `${TEXT_SECONDARY} dark:hover:text-gray-50`
-                }
-            `}
-        >
-            {item.name}
-        </button>
-    );
-
-    return (
-        <header className={`sticky top-0 z-50 w-full backdrop-blur-md bg-opacity-95 shadow-lg ${BG_LIGHT} dark:${BG_DARK}`}>
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-                <button 
-                    onClick={() => scrollToSection('hero')}
-                    className={`text-xl font-extrabold ${TEXT_PRIMARY} tracking-tight hover:${THEME_ACCENT} transition-colors duration-300`}
-                >
-                    Madhuri.
-                </button>
-
-                {/* Desktop Nav */}
-                <nav className="hidden lg:flex space-x-6">
-                    {navItems.map(item => <NavLink key={item.id} item={item} />)}
-                </nav>
-
-                <div className="flex items-center space-x-3">
-                    <DarkModeToggle isDark={isDark} toggleDark={toggleDark} />
-                    {/* Mobile Menu Button */}
-                    <button
-                        className={`lg:hidden p-2 rounded-full ${TEXT_PRIMARY} hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors`}
-                        onClick={toggleMenu}
-                    >
-                        {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-                    </button>
-                </div>
-            </div>
-
-            {/* Mobile Menu Overlay */}
-            {isMenuOpen && (
-                <div className={`fixed inset-0 z-40 lg:hidden ${BG_LIGHT} dark:${BG_DARK} ${TEXT_PRIMARY} transition-opacity duration-300 flex flex-col items-center justify-center space-y-8`}>
-                    <div className="absolute top-4 right-4">
-                        <button
-                            className={`p-2 rounded-full ${TEXT_PRIMARY} hover:bg-gray-200 dark:hover:bg-gray-800`}
-                            onClick={toggleMenu}
-                        >
-                            <X className="w-8 h-8" />
-                        </button>
-                    </div>
-                    {navItems.map(item => (
-                        <button
-                            key={item.id}
-                            onClick={() => { scrollToSection(item.id); toggleMenu(); }}
-                            className={`text-3xl font-bold transition-all duration-300 py-3 w-4/5 text-center rounded-lg
-                                ${activeId === item.id ? THEME_ACCENT : TEXT_PRIMARY} 
-                                hover:bg-gray-200 dark:hover:bg-gray-800
-                            `}
-                        >
-                            {item.name}
-                        </button>
-                    ))}
-                </div>
-            )}
-        </header>
-    );
-};
-
-// 3. Project Card Component
-const ProjectCard = ({ project, setLightboxContent }) => {
-    return (
-        <div
-            className={`
-                group rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl 
-                transition-all duration-500 transform hover:scale-[1.01] cursor-pointer
-                ${BG_LIGHT} dark:bg-gray-800 border dark:border-gray-700
-                relative
-            `}
-            onClick={() => setLightboxContent(project)}
-        >
-            {/* Project Thumbnail Image */}
-            <div className="w-full aspect-[4/3] overflow-hidden">
-                <img
-                    src={project.image}
-                    alt={project.title}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    onError={(e) => { e.target.onerror = null; e.target.src = `https://placehold.co/600x450/${project.color}/FFFFFF?text=${project.title.split(' ')[0]}` }}
-                />
-            </div>
-            
-            {/* Tags */}
-            <div className="p-4 flex flex-wrap gap-2 absolute top-0 left-0">
-                {project.tags.map(tag => (
-                    <span key={tag} className={`px-2 py-0.5 text-xs font-semibold rounded-full bg-black/70 text-white dark:bg-white/70 dark:text-gray-900 backdrop-blur-sm`}>
-                        {tag}
-                    </span>
-                ))}
-            </div>
-
-
-            <div className="p-6">
-                <h3 className={`text-2xl font-bold mb-1 ${TEXT_PRIMARY}`}>{project.title}</h3>
-                <p className={`text-md ${TEXT_SECONDARY} mb-4`}>{project.description}</p>
-                
-                {/* Hover Microinteraction */}
-                <div 
-                    className={`
-                        flex items-center ${THEME_ACCENT} font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300
-                        transform translate-x-0 group-hover:translate-x-0
-                    `}
-                >
-                    View Case Study <ArrowRight className="w-5 h-5 ml-2 transition-transform duration-300 group-hover:translate-x-1" />
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// 4. Case Study Lightbox Overlay
-const Lightbox = ({ content, setLightboxContent }) => {
-    if (!content) return null;
-
-    return (
-        <div 
-            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900 bg-opacity-80 backdrop-blur-sm transition-opacity duration-300"
-            onClick={() => setLightboxContent(null)}
-        >
-            <div 
-                className={`w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-xl shadow-2xl relative ${BG_LIGHT} dark:${BG_DARK} transform transition-transform duration-500 scale-100`}
-                onClick={e => e.stopPropagation()} // Prevent closing when clicking inside
-            >
-                {/* Close Button */}
-                <button
-                    className={`absolute top-4 right-4 p-2 rounded-full ${PRIMARY_ACCENT} z-10`}
-                    onClick={() => setLightboxContent(null)}
-                >
-                    <X className="w-6 h-6" />
-                </button>
-                
-                {/* Content */}
-                <div className="p-8 md:p-12">
-                    <img src={content.image} alt={content.title} className="w-full h-auto rounded-lg mb-6 shadow-md" />
-                    <h2 className={`text-4xl font-extrabold mb-3 ${TEXT_PRIMARY}`}>{content.title}</h2>
-                    <div className="flex flex-wrap gap-3 mb-6">
-                         {content.tags.map(tag => (
-                            <span key={tag} className={`px-3 py-1 text-sm font-medium rounded-full ${THEME_ACCENT} border border-current`}>
-                                {tag}
-                            </span>
-                        ))}
-                    </div>
-                    
-                    <p className={`text-lg mb-6 ${TEXT_SECONDARY}`}>{content.longDescription}</p>
-
-                    <h3 className={`text-2xl font-bold mb-3 ${TEXT_PRIMARY}`}>Key Results</h3>
-                    <ul className={`space-y-2 ${TEXT_SECONDARY} list-disc list-inside`}>
-                        <li>**+45%** Conversion Rate uplift from revised landing UI.</li>
-                        <li>**120k+** Impressions generated from the social media campaign.</li>
-                        <li>**Final Deliverables:** Brand Style Guide, Component Library, Print-Ready Packaging Files.</li>
-                    </ul>
-
-                    <p className={`mt-8 text-sm italic ${TEXT_SECONDARY}`}>
-                        *This is a case study mockup. In the live portfolio, you would link to a dedicated, detailed presentation of this work.*
-                    </p>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// 5. Scroll Animation Wrapper
-const ScrollAnimate = ({ children, id }) => {
-    const ref = useRef(null);
-    useEffect(() => {
-        const currentRef = ref.current;
-        if (!currentRef) return;
-
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (entry.isIntersecting) {
-                    currentRef.classList.add('is-visible');
-                }
-            },
-            {
-                threshold: 0.15, // Starts animation when 15% of the element is visible
-            }
-        );
-
-        observer.observe(currentRef);
-
-        return () => {
-            if (currentRef) observer.unobserve(currentRef);
-        };
-    }, []);
-
-    return (
-        <section 
-            id={id} 
-            ref={ref} 
-            className="opacity-0 transition-all duration-1000 transform translate-y-12 section-padding is-hidden"
-        >
-            {children}
-        </section>
-    );
-};
-
-// Global CSS for Scroll Animation and Parallax
-const GlobalStyles = () => (
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Madhuri | Visual Designer Portfolio</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        {`
         /* Custom Font Import */
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
         
-        /* Apply smooth scroll */
-        html {
-            scroll-behavior: smooth;
-        }
-
-        /* Set base font */
-        body {
-            font-family: 'Inter', sans-serif;
-        }
+        /* Apply smooth scroll and base font */
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; }
 
         /* Define bold heading style */
-        .headline {
-            font-family: 'Outfit', sans-serif;
-            letter-spacing: -0.05em;
-        }
+        .headline { font-family: 'Outfit', sans-serif; letter-spacing: -0.05em; }
 
         /* Scroll Animation States */
-        .is-hidden {
-            opacity: 0;
-            transform: translateY(3rem);
-        }
-
-        .is-visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        .is-hidden { opacity: 0; transform: translateY(3rem); transition: all 1s ease-out; }
+        .is-visible { opacity: 1; transform: translateY(0); }
 
         /* Section Padding */
         .section-padding {
@@ -332,60 +33,702 @@ const GlobalStyles = () => (
             padding-right: 1rem;
         }
 
-        /* Hero Parallax Effect */
+        /* Hero Parallax Effect - Initial state */
         #hero-visuals {
-            transform: translateY(var(--scroll-y));
             transition: transform 0.1s linear;
         }
         
-        /* Glassmorphism on hover for work cards */
-        .group:hover .glass-effect {
-            backdrop-filter: blur(8px);
-            background-color: rgba(255, 255, 255, 0.2);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        }
-
         /* Utility for list marker colors in dark mode */
         .dark .list-disc > li::marker {
             color: #50c878; /* Neon Green */
         }
-        `}
+        
+        /* Form input base styling */
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid #e5e7eb;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            background-color: #ffffff; /* Default light */
+            color: #1f2937; /* Default light */
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #007AFF;
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+        }
+        /* Form input dark mode styling - adjusted dynamically by JS */
+        .dark .form-input {
+            background-color: #374151;
+            color: #f9fafb;
+            border-color: #374151;
+        }
+        .dark .form-input:focus {
+            border-color: #50c878;
+            box-shadow: 0 0 0 3px rgba(80, 200, 120, 0.2);
+        }
+
+        /* Hide the mobile menu by default */
+        #mobile-menu-overlay { display: none; }
     </style>
-);
+</head>
+<body class="bg-[#FCFCF7] dark:bg-[#1A1A1A] text-gray-900 dark:text-gray-50 transition-colors duration-500">
+
+    <!-- Navigation (Header) -->
+    <header id="header-nav" class="sticky top-0 z-50 w-full backdrop-blur-md bg-opacity-95 shadow-lg bg-[#FCFCF7] dark:bg-[#1A1A1A]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <button 
+                onclick="scrollToSection('hero')"
+                class="text-xl font-extrabold text-gray-900 dark:text-gray-50 tracking-tight hover:text-[#007AFF] dark:hover:text-[#50c878] transition-colors duration-300"
+            >
+                Madhuri.
+            </button>
+
+            <!-- Desktop Nav Container -->
+            <nav id="desktop-nav" class="hidden lg:flex space-x-6">
+                <!-- NavLinks injected here by JS -->
+            </nav>
+
+            <div class="flex items-center space-x-3">
+                <!-- Dark Mode Toggle Container -->
+                <div id="dark-mode-container">
+                    <!-- Toggle Button injected here by JS -->
+                </div>
+                
+                <!-- Mobile Menu Button -->
+                <button
+                    id="mobile-menu-btn"
+                    class="lg:hidden p-2 rounded-full text-gray-900 dark:text-gray-50 hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors"
+                    onclick="toggleMenu()"
+                >
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Menu Overlay -->
+    <div 
+        id="mobile-menu-overlay"
+        class="fixed inset-0 z-40 lg:hidden bg-[#FCFCF7] dark:bg-[#1A1A1A] text-gray-900 dark:text-gray-50 transition-opacity duration-300 flex-col items-center justify-center space-y-8"
+    >
+        <div class="absolute top-4 right-4">
+            <button
+                class="p-2 rounded-full text-gray-900 dark:text-gray-50 hover:bg-gray-200 dark:hover:bg-gray-800"
+                onclick="toggleMenu()"
+            >
+                <i data-lucide="x" class="w-8 h-8"></i>
+            </button>
+        </div>
+        <!-- Mobile Nav Links injected here by JS -->
+        <div id="mobile-nav-links" class="w-full text-center flex flex-col items-center gap-4"></div>
+    </div>
+
+    <main class="pt-16">
+        
+        <!-- 1. HERO / LANDING -->
+        <section id="hero" class="relative h-[90vh] flex items-center overflow-hidden section-padding pt-24">
+            <div class="max-w-4xl">
+                <p class="text-lg md:text-xl font-medium mb-4 transition-opacity duration-1000 text-gray-600 dark:text-gray-400">
+                    Hi, I’m Madhuri — Graphic & Visual Designer.
+                </p>
+                <h1 class="text-5xl md:text-7xl lg:text-8xl font-extrabold headline leading-tight mb-8 transition-opacity duration-1000 text-gray-900 dark:text-gray-50">
+                    I design <span class="text-[#007AFF] dark:text-[#50c878]">bold, clear visuals</span> that convert and impress.
+                </h1>
+                <p class="text-xl md:text-2xl mb-12 max-w-2xl text-gray-600 dark:text-gray-400 transition-opacity duration-1000">
+                    Specializing in cohesive branding, high-impact social media campaigns, and elegant digital design for premium, purpose-driven brands.
+                </p>
+
+                <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6">
+                    <button 
+                        onclick="scrollToSection('work')"
+                        class="px-8 py-3 rounded-full font-bold text-lg shadow-lg transform transition-all duration-300 bg-[#007AFF] hover:bg-[#005bb5] dark:bg-[#50c878] dark:hover:bg-[#3d9a5b] text-white hover:shadow-xl hover:scale-[1.02]"
+                    >
+                        View Selected Work
+                    </button>
+                    <a 
+                        href="#" 
+                        class="px-8 py-3 rounded-full font-semibold text-lg border-2 text-[#007AFF] dark:text-[#50c878] border-current transition-colors duration-300 hover:bg-gray-200 dark:hover:bg-gray-800 flex items-center justify-center"
+                    >
+                        Download Resume <i data-lucide="download" class="w-5 h-5 ml-2"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Hero Visuals (Parallax Element) -->
+            <div id="hero-visuals" class="absolute right-0 top-1/2 -translate-y-1/2 w-full max-w-md lg:max-w-xl h-full hidden md:block">
+                <div class="absolute top-1/4 left-1/4 w-40 h-40 bg-gray-200 dark:bg-gray-800 rounded-3xl rotate-12 shadow-2xl"></div>
+                <!-- Accent color needs dynamic replacement in JS for dark mode, using light mode default here -->
+                <div class="absolute bottom-1/4 right-1/4 w-64 h-48 bg-[#007AFF]/50 dark:bg-[#50c878]/50 rounded-2xl -rotate-6 shadow-2xl backdrop-blur-md"></div>
+                <div class="absolute top-1/3 right-1/4 w-32 h-32 bg-gray-300 dark:bg-gray-700 rounded-full shadow-2xl"></div>
+            </div>
+        </section>
+
+        <!-- 2. SELECTED WORK / CASE STUDIES -->
+        <section id="work" class="section-padding is-hidden">
+            <h2 class="text-4xl md:text-5xl font-extrabold headline mb-12 text-gray-900 dark:text-gray-50">Selected Work.</h2>
+            <div id="projects-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Project Cards injected here by JS -->
+            </div>
+        </section>
+
+        <!-- 3. ABOUT -->
+        <section id="about" class="section-padding is-hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
+                <div class="flex justify-center lg:justify-start">
+                    <div class="w-48 h-48 bg-gray-200 dark:bg-gray-800 rounded-full flex items-center justify-center shadow-xl">
+                        <span class="text-4xl font-bold text-gray-600 dark:text-gray-400">M.</span>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-2">
+                    <h2 class="text-4xl md:text-5xl font-extrabold headline mb-6 text-gray-900 dark:text-gray-50">About Me.</h2>
+                    <p class="text-xl mb-8 text-gray-600 dark:text-gray-400 max-w-3xl">
+                        With **9+ years of experience**, I partner with fast-growing startups and established organizations to refine their visual identity and create assets that drive business results. My style is a blend of minimal design principles and expressive typography, focusing on clarity and emotional resonance. I love transforming complex ideas into simple, high-impact visuals.
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Stats -->
+            <div class="mt-12 pt-8 border-t dark:border-gray-700 grid grid-cols-1 sm:grid-cols-3 gap-8 text-center">
+                <div id="stat-years">
+                    <div class="text-4xl font-extrabold headline mb-1 text-[#007AFF] dark:text-[#50c878]">9+</div>
+                    <p class="text-lg font-medium text-gray-600 dark:text-gray-400">Years Experience</p>
+                </div>
+                <div id="stat-projects">
+                    <div class="text-4xl font-extrabold headline mb-1 text-[#007AFF] dark:text-[#50c878]">100+</div>
+                    <p class="text-lg font-medium text-gray-600 dark:text-gray-400">Successful Projects</p>
+                </div>
+                <div id="stat-industries">
+                    <div class="text-4xl font-extrabold headline mb-1 text-[#007AFF] dark:text-[#50c878]">10+</div>
+                    <p class="text-lg font-medium text-gray-600 dark:text-gray-400">Industries Served</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. SKILLS & TOOLS -->
+        <section id="skills" class="section-padding is-hidden">
+            <h2 class="text-4xl md:text-5xl font-extrabold headline mb-12 text-gray-900 dark:text-gray-50">Skills & Tools.</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <!-- Core Skills -->
+                <div>
+                    <h3 class="text-2xl font-bold mb-6 text-gray-900 dark:text-gray-50">Core Skills</h3>
+                    <ul id="core-skills-list" class="space-y-4 text-lg text-gray-600 dark:text-gray-400">
+                        <!-- Skills injected here by JS -->
+                    </ul>
+                </div>
+
+                <!-- Tools -->
+                <div>
+                    <h3 class="text-2xl font-bold mb-6 text-gray-900 dark:text-gray-50">Design Tools</h3>
+                    <div id="tools-container" class="flex flex-wrap gap-3">
+                        <!-- Tools injected here by JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. PROCESS -->
+        <section id="process" class="section-padding is-hidden">
+            <h2 class="text-4xl md:text-5xl font-extrabold headline mb-12 text-gray-900 dark:text-gray-50">My 4-Step Process.</h2>
+            <div id="process-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                <!-- Process Steps injected here by JS -->
+            </div>
+        </section>
+
+        <!-- 6. PLAYGROUND / EXPERIMENTS -->
+        <section id="playground" class="section-padding is-hidden">
+            <h2 class="text-4xl md:text-5xl font-extrabold headline mb-12 text-gray-900 dark:text-gray-50">Playground & Experiments.</h2>
+            <div id="playground-container" class="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
+                <!-- Playground Items injected here by JS -->
+            </div>
+        </section>
+
+        <!-- 7. TESTIMONIALS -->
+        <section id="testimonials" class="section-padding is-hidden">
+            <h2 class="text-4xl md:text-5xl font-extrabold headline mb-12 text-gray-900 dark:text-gray-50">What Clients Say.</h2>
+            <div id="testimonials-container" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Testimonials injected here by JS -->
+            </div>
+        </section>
+
+        <!-- 8. CONTACT / WORK WITH ME -->
+        <section id="contact" class="section-padding is-hidden">
+            <div class="max-w-4xl mx-auto text-center">
+                <h2 class="text-5xl md:text-6xl font-extrabold headline mb-4 text-[#007AFF] dark:text-[#50c878]">Let's work together.</h2>
+                <p class="text-xl mb-12 text-gray-600 dark:text-gray-400">
+                    Available for full-time remote/on-site roles and freelance projects. Let's create something memorable and effective.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-6xl mx-auto">
+                <!-- Contact Form -->
+                <form class="p-8 rounded-xl shadow-2xl bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800" onsubmit="event.preventDefault(); alert('Message sent! (Demo)');">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+                        <input type="text" placeholder="Name" class="form-input" />
+                        <input type="email" placeholder="Email" class="form-input" />
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+                        <select class="form-input text-gray-600 dark:text-gray-400">
+                            <option>Project Type</option>
+                            <option>Branding</option>
+                            <option>UI/Web Design</option>
+                            <option>Social Campaign</option>
+                            <option>Other</option>
+                        </select>
+                        <select class="form-input text-gray-600 dark:text-gray-400">
+                            <option>Budget Range</option>
+                            <option>Less than $5k</option>
+                            <option>$5k – $10k</option>
+                            <option>$10k+</option>
+                            <option>TBD / Full-time</option>
+                        </select>
+                    </div>
+                    <textarea placeholder="Tell me about your project..." rows="5" class="form-input mb-6"></textarea>
+                    <button type="submit" class="w-full py-3 rounded-lg font-bold text-lg shadow-lg transform transition-all duration-300 bg-[#007AFF] hover:bg-[#005bb5] dark:bg-[#50c878] dark:hover:bg-[#3d9a5b] text-white hover:shadow-xl hover:scale-[1.01]">
+                        Send Message
+                    </button>
+                </form>
+
+                <!-- Direct Links -->
+                <div id="contact-links-container" class="space-y-6 lg:mt-8">
+                    <h3 class="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-50">Find Me Online</h3>
+                    <!-- Links injected here by JS -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Floating "Let's Talk" CTA -->
+    <button
+        id="cta-button"
+        onclick="scrollToSection('contact')"
+        class="fixed bottom-6 right-6 lg:bottom-10 lg:right-10 px-6 py-3 rounded-full font-bold text-lg shadow-2xl transition-all duration-300 transform bg-[#007AFF] hover:bg-[#005bb5] dark:bg-[#50c878] dark:hover:bg-[#3d9a5b] text-white hover:scale-[1.05] z-50"
+    >
+        Let's Talk
+    </button>
+    
+    <!-- Case Study Lightbox Overlay -->
+    <div 
+        id="lightbox-overlay"
+        class="fixed inset-0 z-[60] hidden items-center justify-center p-4 bg-gray-900 bg-opacity-80 backdrop-blur-sm transition-opacity duration-300"
+        onclick="closeLightbox()"
+    >
+        <div 
+            id="lightbox-content"
+            class="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-xl shadow-2xl relative bg-[#FCFCF7] dark:bg-[#1A1A1A] transform transition-transform duration-500 scale-100 text-left"
+            onclick="event.stopPropagation()"
+        >
+            <!-- Lightbox content injected here by JS -->
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="mt-20 py-8 border-t border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 text-center">
+        <p class="mb-2">Madhuri &copy; <span id="current-year"></span></p>
+        <p class="text-sm">Designed with love & a lot of coffee. Crafted in HTML + JS + Tailwind.</p>
+    </footer>
+
+    <script>
+        // --- CONFIGURATION / DATA ---
+        const PRIMARY_ACCENT_BG = 'bg-[#007AFF] hover:bg-[#005bb5] dark:bg-[#50c878] dark:hover:bg-[#3d9a5b] text-white transition-all duration-300';
+        const TEXT_SECONDARY = 'text-gray-600 dark:text-gray-400';
+        const SECTION_IDS = ['hero', 'work', 'about', 'skills', 'process', 'playground', 'testimonials', 'contact'];
+
+        const PROJECTS_DATA = [
+            { id: 1, title: "Skincare E-commerce Revamp", description: "UI/UX and campaign creative for a minimalist beauty brand.", tags: ["UI/UX", "E-commerce", "Branding"], image: "https://placehold.co/800x600/1e40af/FFFFFF?text=Project+Mockup+01", color: "1e40af", longDescription: "Designed the complete visual identity and user interface for a clean skincare brand, focusing on high-conversion landing pages and accessible mobile design. Included social media ad templates and a comprehensive brand book." },
+            { id: 2, title: "Global Fintech Brand Identity", description: "Full logo system, color palette, and visual guidelines.", tags: ["Branding", "Strategy", "Print"], image: "https://placehold.co/800x600/ef4444/FFFFFF?text=Project+Mockup+02", color: "ef4444", longDescription: "Developed a confident, modern brand identity for a B2B fintech solution. The brief required a clean, trustworthy look that stood out from traditional financial institutions. Deliverables included stationery and pitch deck templates." },
+            { id: 3, title: "Summer Campaign Creative", description: "High-impact assets for a seasonal fashion launch across digital channels.", tags: ["Social Media", "Campaign", "Motion"], image: "https://placehold.co/800x600/10b981/FFFFFF?text=Project+Mockup+03", color: "10b981", longDescription: "Managed creative direction and asset production for a large-scale summer campaign. Focus was on motion graphics for Instagram/TikTok and dynamic banner ads. Achieved record-high click-through rates (CTRs) for the client." },
+            { id: 4, title: "SaaS App Onboarding Flow", description: "Illustration style and in-app guidance for a complex productivity tool.", tags: ["UI/UX", "Illustration"], image: "https://placehold.co/800x600/f59e0b/FFFFFF?text=Project+Mockup+04", color: "f59e0b", longDescription: "Simplified the initial user experience (onboarding) for a technical SaaS product by introducing custom, friendly illustrations and clearer micro-copy, drastically reducing initial user drop-off." },
+        ];
+
+        const CORE_SKILLS = ["Branding & Visual Identity", "High-Impact Social Media Design", "UI Design for Web & App", "Presentation & Deck Design", "Packaging Concepts & Strategy", "Campaign Creative Direction"];
+        const DESIGN_TOOLS = ["Figma (Primary)", "Adobe Photoshop", "Adobe Illustrator", "Adobe InDesign", "Canva", "After Effects", "Webflow (Basic)", "Procreate"];
+        const PROCESS_STEPS = [
+            { title: "Discover", icon: 'aperture', desc: "Understanding your unique business goals, audience, and market position." },
+            { title: "Define", icon: 'trello', desc: "Translating insights into a clear visual strategy, mood boards, and key deliverables." },
+            { title: "Design", icon: 'zap', desc: "Iterative design and development of all assets—from concept to final execution." },
+            { title: "Deliver", icon: 'package', desc: "Handoff of final, organized files, and clear guidelines for smooth implementation." }
+        ];
+        const TESTIMONIALS = [
+            { quote: "Madhuri’s design work not only looked incredible but fundamentally changed how our audience perceived our brand. She’s professional, fast, and highly conceptual.", name: "Anya Sharma", role: "Creative Director", company: "Flux Agency" },
+            { quote: "Hiring Madhuri was the best decision for our new product launch. The UI/UX was clean, intuitive, and resulted in a 45% uplift in conversion rate.", name: "David Chen", role: "Founder & CEO", company: "SwiftFlow" },
+            { quote: "She takes complex technical briefs and distills them into beautiful, accessible visuals. Her attention to detail is unmatched.", name: "Priya Singh", role: "Marketing Manager", company: "InnovateTech" },
+        ];
+        const CONTACT_LINKS = [
+            { icon: 'mail', label: "Email Me", link: "mailto:madhuri@designer.com", handle: "madhuri@designer.com" },
+            { icon: 'briefcase', label: "LinkedIn", link: "#", handle: "@madhuridesign" },
+            { icon: 'code', label: "Behance", link: "#", handle: "/MadhuriBehance" },
+            { icon: 'instagram', label: "Instagram Portfolio", link: "#", handle: "@madhuri.visuals" }
+        ];
+        const PLAYGROUND_ITEMS = [
+            { img: '800x1200', text: 'Experimental Typography Poster' },
+            { img: '1000x800', text: 'Abstract Digital Painting' },
+            { img: '600x600', text: '3D Render Concept' },
+            { img: '1200x900', text: 'Branding Mockup Iteration' },
+            { img: '700x1000', text: 'Geometric Pattern Study' },
+            { img: '900x700', text: 'Vector Illustration Series' },
+        ];
 
 
-// --- MAIN APP COMPONENT ---
-export default function App() {
-    const [isDark, setIsDark] = useState(false);
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [lightboxContent, setLightboxContent] = useState(null);
-    const activeId = useActiveSection(SECTION_IDS);
-    const heroRef = useRef(null);
+        // --- STATE VARIABLES (Global JS) ---
+        let isDark = false;
+        let isMenuOpen = false;
+        let activeId = SECTION_IDS[0];
+        let lightboxContent = null;
 
-    // Load theme preference
-    useEffect(() => {
-        const storedTheme = localStorage.getItem('theme');
-        if (storedTheme === 'dark' || (!storedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            setIsDark(true);
-        }
-    }, []);
+        // --- UTILITY FUNCTIONS ---
 
-    // Apply theme class and save preference
-    useEffect(() => {
-        if (isDark) {
-            document.documentElement.classList.add('dark');
-            localStorage.setItem('theme', 'dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-            localStorage.setItem('theme', 'light');
-        }
-    }, [isDark]);
+        const updateThemeClass = () => {
+            const html = document.documentElement;
+            if (isDark) {
+                html.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                html.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+            }
+            // Re-render components that rely on dark mode state (like the toggle button icon)
+            renderDarkModeToggle();
+        };
 
-    const toggleDark = useCallback(() => setIsDark(prev => !prev), []);
-    const toggleMenu = useCallback(() => setIsMenuOpen(prev => !prev), []);
+        window.toggleDark = () => {
+            isDark = !isDark;
+            updateThemeClass();
+        };
 
-    // Simple Parallax Effect for Hero Visuals
-    useEffect(() => {
+        window.scrollToSection = (id) => {
+            document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+        };
+
+        window.toggleMenu = () => {
+            isMenuOpen = !isMenuOpen;
+            const overlay = document.getElementById('mobile-menu-overlay');
+            const menuIcon = document.querySelector('#mobile-menu-btn [data-lucide]');
+
+            if (isMenuOpen) {
+                overlay.style.display = 'flex';
+                // Change icon to X
+                menuIcon.setAttribute('data-lucide', 'x');
+                lucide.createIcons();
+            } else {
+                overlay.style.display = 'none';
+                // Change icon back to Menu
+                menuIcon.setAttribute('data-lucide', 'menu');
+                lucide.createIcons();
+            }
+        };
+
+        // --- INTERSECTION OBSERVER LOGIC ---
+
+        const setActiveSection = (id) => {
+            if (activeId === id) return;
+            activeId = id;
+            updateNavLinks();
+            updateCtaButtonVisibility();
+        };
+
+        const setupIntersectionObserver = () => {
+            const observer = new IntersectionObserver(
+                (entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            setActiveSection(entry.target.id);
+                        }
+                        
+                        // Scroll Animation Logic
+                        const element = entry.target;
+                        if (element.classList.contains('is-hidden')) {
+                            if (entry.isIntersecting) {
+                                element.classList.remove('is-hidden');
+                                element.classList.add('is-visible');
+                            }
+                        }
+                    });
+                },
+                {
+                    rootMargin: '-30% 0px -70% 0px', // Active Nav Trigger
+                    threshold: 0.15, // Scroll Animation Trigger
+                }
+            );
+
+            SECTION_IDS.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.classList.add('is-hidden'); // Add initial state for animation
+                    observer.observe(element);
+                }
+            });
+        };
+
+        // --- RENDERING FUNCTIONS ---
+
+        const renderDarkModeToggle = () => {
+            const container = document.getElementById('dark-mode-container');
+            container.innerHTML = `
+                <button
+                    onclick="toggleDark()"
+                    aria-label="Toggle dark mode"
+                    class="p-2 rounded-full transition-colors duration-300 text-gray-900 dark:text-gray-50 hover:bg-gray-200 dark:hover:bg-gray-800"
+                >
+                    <i data-lucide="${isDark ? 'sun' : 'moon'}" class="w-5 h-5"></i>
+                </button>
+            `;
+            lucide.createIcons();
+        };
+
+        const updateNavLinks = () => {
+            const navItems = [
+                { name: 'Work', id: 'work' },
+                { name: 'About', id: 'about' },
+                { name: 'Skills', id: 'skills' },
+                { name: 'Process', id: 'process' },
+                { name: 'Playground', id: 'playground' },
+                { name: 'Testimonials', id: 'testimonials' },
+                { name: 'Contact', id: 'contact' },
+            ];
+
+            const desktopNav = document.getElementById('desktop-nav');
+            const mobileNav = document.getElementById('mobile-nav-links');
+            
+            desktopNav.innerHTML = navItems.map(item => {
+                const isActive = activeId === item.id;
+                return `
+                    <button
+                        onclick="scrollToSection('${item.id}')"
+                        class="
+                            px-3 py-1 text-sm font-medium transition-all duration-300
+                            hover:text-gray-900 dark:hover:text-white
+                            ${isActive 
+                                ? 'text-[#007AFF] dark:text-[#50c878] font-bold border-b-2 border-current'
+                                : `${TEXT_SECONDARY} dark:hover:text-gray-50`
+                            }
+                        "
+                    >
+                        ${item.name}
+                    </button>
+                `;
+            }).join('');
+
+            mobileNav.innerHTML = navItems.map(item => {
+                const isActive = activeId === item.id;
+                return `
+                    <button
+                        onclick="scrollToSection('${item.id}'); toggleMenu();"
+                        class="text-3xl font-bold transition-all duration-300 py-3 w-4/5 text-center rounded-lg
+                            ${isActive ? 'text-[#007AFF] dark:text-[#50c878]' : 'text-gray-900 dark:text-gray-50'} 
+                            hover:bg-gray-200 dark:hover:bg-gray-800
+                        "
+                    >
+                        ${item.name}
+                    </button>
+                `;
+            }).join('');
+        };
+
+        const renderProjects = () => {
+            const container = document.getElementById('projects-container');
+            container.innerHTML = PROJECTS_DATA.map(project => {
+                const tagsHtml = project.tags.map(tag => `
+                    <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-black/70 text-white dark:bg-white/70 dark:text-gray-900 backdrop-blur-sm">
+                        ${tag}
+                    </span>
+                `).join('');
+
+                return `
+                    <div
+                        class="group rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-[1.01] cursor-pointer bg-[#FCFCF7] dark:bg-gray-800 border dark:border-gray-700 relative"
+                        onclick="openLightbox(${project.id})"
+                    >
+                        <div class="w-full aspect-[4/3] overflow-hidden">
+                            <img
+                                src="${project.image}"
+                                alt="${project.title}"
+                                class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                onerror="this.onerror=null; this.src='https://placehold.co/600x450/${project.color}/FFFFFF?text=${project.title.split(' ')[0]}'"
+                            />
+                        </div>
+                        
+                        <div class="p-4 flex flex-wrap gap-2 absolute top-0 left-0">${tagsHtml}</div>
+
+                        <div class="p-6">
+                            <h3 class="text-2xl font-bold mb-1 text-gray-900 dark:text-gray-50">${project.title}</h3>
+                            <p class="text-md ${TEXT_SECONDARY} mb-4">${project.description}</p>
+                            
+                            <div class="flex items-center text-[#007AFF] dark:text-[#50c878] font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-x-0 group-hover:translate-x-0">
+                                View Case Study <i data-lucide="arrow-right" class="w-5 h-5 ml-2 transition-transform duration-300 group-hover:translate-x-1"></i>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons(); // Render Lucide icons for arrow
+        };
+
+        const renderSkillsAndProcess = () => {
+            // Core Skills
+            const skillsList = document.getElementById('core-skills-list');
+            skillsList.innerHTML = CORE_SKILLS.map(skill => `
+                <li class="flex items-start">
+                    <i data-lucide="arrow-right" class="w-5 h-5 mr-3 mt-1 shrink-0 text-[#007AFF] dark:text-[#50c878]"></i>
+                    ${skill}
+                </li>
+            `).join('');
+
+            // Design Tools
+            const toolsContainer = document.getElementById('tools-container');
+            toolsContainer.innerHTML = DESIGN_TOOLS.map(tool => {
+                const isPrimary = tool.includes('(Primary)');
+                return `
+                    <span 
+                        class="px-4 py-2 text-md font-semibold rounded-full border transition-all duration-300 cursor-default
+                            ${isPrimary 
+                                ? `${PRIMARY_ACCENT_BG} shadow-md` 
+                                : `border-gray-300 dark:border-gray-700 ${TEXT_SECONDARY} hover:bg-gray-100 dark:hover:bg-gray-700`
+                            }
+                        "
+                    >
+                        ${tool}
+                    </span>
+                `;
+            }).join('');
+
+            // Process Steps
+            const processContainer = document.getElementById('process-container');
+            processContainer.innerHTML = PROCESS_STEPS.map((step) => `
+                <div 
+                    class="p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-lg bg-[#FCFCF7] dark:bg-gray-900 transition-transform duration-300 hover:scale-[1.03]"
+                >
+                    <i data-lucide="${step.icon}" class="w-8 h-8 mb-4 text-[#007AFF] dark:text-[#50c878]"></i>
+                    <h3 class="text-xl font-bold mb-2 text-gray-900 dark:text-gray-50">${step.title}</h3>
+                    <p class="${TEXT_SECONDARY}">${step.desc}</p>
+                </div>
+            `).join('');
+            
+            lucide.createIcons(); // Render Lucide icons for skills/process
+        };
+
+        const renderPlayground = () => {
+            const container = document.getElementById('playground-container');
+            container.innerHTML = PLAYGROUND_ITEMS.map((item, index) => `
+                <div 
+                    class="break-inside-avoid relative group overflow-hidden rounded-lg shadow-md cursor-pointer transition-transform duration-300 hover:scale-[1.03]"
+                >
+                    <img
+                        src="https://placehold.co/${item.img}/374151/FFFFFF?text=Experiment+${index+1}"
+                        alt="${item.text}"
+                        class="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110"
+                        onerror="this.onerror=null; this.src='https://placehold.co/${item.img}/374151/FFFFFF?text=Experiment+${index+1}'"
+                    />
+                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300">
+                        <p class="text-white text-center font-bold p-4">${item.text}</p>
+                    </div>
+                </div>
+            `).join('');
+        };
+
+        const renderTestimonials = () => {
+            const container = document.getElementById('testimonials-container');
+            container.innerHTML = TESTIMONIALS.map((t) => `
+                <div 
+                    class="p-8 rounded-xl border-2 border-gray-200 dark:border-gray-800 shadow-xl bg-[#FCFCF7] dark:bg-gray-900 transition-transform duration-300 hover:scale-[1.02] hover:shadow-2xl"
+                >
+                    <blockquote class="text-xl italic mb-4 text-gray-900 dark:text-gray-50">"${t.quote}"</blockquote>
+                    <p class="font-semibold text-[#007AFF] dark:text-[#50c878] mt-4">${t.name}</p>
+                    <p class="${TEXT_SECONDARY}">${t.role} at ${t.company}</p>
+                </div>
+            `).join('');
+        };
+
+        const renderContactLinks = () => {
+            const container = document.getElementById('contact-links-container');
+            // Assuming the h3 is already there, just append the links
+            let linksHtml = CONTACT_LINKS.map((link) => `
+                <a 
+                    href="${link.link}" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    class="flex items-center p-4 rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-lg bg-gray-100 dark:bg-gray-800"
+                >
+                    <i data-lucide="${link.icon}" class="w-7 h-7 mr-4 text-[#007AFF] dark:text-[#50c878] shrink-0"></i>
+                    <div>
+                        <p class="font-semibold text-lg text-gray-900 dark:text-gray-50">${link.label}</p>
+                        <p class="text-sm ${TEXT_SECONDARY}">${link.handle}</p>
+                    </div>
+                </a>
+            `).join('');
+            container.innerHTML += linksHtml;
+            lucide.createIcons();
+        };
+
+        const updateCtaButtonVisibility = () => {
+            const cta = document.getElementById('cta-button');
+            if (activeId === 'contact') {
+                cta.classList.add('hidden');
+            } else {
+                cta.classList.remove('hidden');
+            }
+        };
+
+        // --- LIGHTBOX LOGIC ---
+        
+        window.openLightbox = (projectId) => {
+            lightboxContent = PROJECTS_DATA.find(p => p.id === projectId);
+            if (!lightboxContent) return;
+
+            const overlay = document.getElementById('lightbox-overlay');
+            const contentDiv = document.getElementById('lightbox-content');
+            
+            const tagsHtml = lightboxContent.tags.map(tag => `
+                <span class="px-3 py-1 text-sm font-medium rounded-full text-[#007AFF] dark:text-[#50c878] border border-current">
+                    ${tag}
+                </span>
+            `).join('');
+
+            contentDiv.innerHTML = `
+                <!-- Close Button -->
+                <button
+                    class="absolute top-4 right-4 p-2 rounded-full ${PRIMARY_ACCENT_BG} z-10"
+                    onclick="closeLightbox()"
+                >
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+                
+                <!-- Content -->
+                <div class="p-8 md:p-12">
+                    <img src="${lightboxContent.image}" alt="${lightboxContent.title}" class="w-full h-auto rounded-lg mb-6 shadow-md" />
+                    <h2 class="text-4xl font-extrabold mb-3 text-gray-900 dark:text-gray-50">${lightboxContent.title}</h2>
+                    <div class="flex flex-wrap gap-3 mb-6">${tagsHtml}</div>
+                    
+                    <p class="text-lg mb-6 ${TEXT_SECONDARY}">${lightboxContent.longDescription}</p>
+
+                    <h3 class="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-50">Key Results</h3>
+                    <ul class="space-y-2 ${TEXT_SECONDARY} list-disc list-inside">
+                        <li>**+45%** Conversion Rate uplift from revised landing UI.</li>
+                        <li>**120k+** Impressions generated from the social media campaign.</li>
+                        <li>**Final Deliverables:** Brand Style Guide, Component Library, Print-Ready Packaging Files.</li>
+                    </ul>
+
+                    <p class="mt-8 text-sm italic ${TEXT_SECONDARY}">
+                        *This is a case study mockup. In the live portfolio, you would link to a dedicated, detailed presentation of this work.*
+                    </p>
+                </div>
+            `;
+            
+            overlay.style.display = 'flex';
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+            lucide.createIcons(); // Render Lucide icons for lightbox close
+        };
+
+        window.closeLightbox = () => {
+            const overlay = document.getElementById('lightbox-overlay');
+            overlay.style.display = 'none';
+            document.body.style.overflow = ''; // Restore scrolling
+            lightboxContent = null;
+        };
+        
+        // --- PARALLAX EFFECT ---
         const handleScroll = () => {
             const y = window.scrollY;
             const visual = document.getElementById('hero-visuals');
@@ -395,334 +738,38 @@ export default function App() {
             }
         };
 
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
 
-    const projects = [
-        { id: 1, title: "Skincare E-commerce Revamp", description: "UI/UX and campaign creative for a minimalist beauty brand.", tags: ["UI/UX", "E-commerce", "Branding"], image: "https://placehold.co/800x600/1e40af/FFFFFF?text=Project+Mockup+01", color: "1e40af", longDescription: "Designed the complete visual identity and user interface for a clean skincare brand, focusing on high-conversion landing pages and accessible mobile design. Included social media ad templates and a comprehensive brand book." },
-        { id: 2, title: "Global Fintech Brand Identity", description: "Full logo system, color palette, and visual guidelines.", tags: ["Branding", "Strategy", "Print"], image: "https://placehold.co/800x600/ef4444/FFFFFF?text=Project+Mockup+02", color: "ef4444", longDescription: "Developed a confident, modern brand identity for a B2B fintech solution. The brief required a clean, trustworthy look that stood out from traditional financial institutions. Deliverables included stationery and pitch deck templates." },
-        { id: 3, title: "Summer Campaign Creative", description: "High-impact assets for a seasonal fashion launch across digital channels.", tags: ["Social Media", "Campaign", "Motion"], image: "https://placehold.co/800x600/10b981/FFFFFF?text=Project+Mockup+03", color: "10b981", longDescription: "Managed creative direction and asset production for a large-scale summer campaign. Focus was on motion graphics for Instagram/TikTok and dynamic banner ads. Achieved record-high click-through rates (CTRs) for the client." },
-        { id: 4, title: "SaaS App Onboarding Flow", description: "Illustration style and in-app guidance for a complex productivity tool.", tags: ["UI/UX", "Illustration"], image: "https://placehold.co/800x600/f59e0b/FFFFFF?text=Project+Mockup+04", color: "f59e0b", longDescription: "Simplified the initial user experience (onboarding) for a technical SaaS product by introducing custom, friendly illustrations and clearer micro-copy, drastically reducing initial user drop-off." },
-    ];
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Set current year in footer
+            document.getElementById('current-year').textContent = new Date().getFullYear();
 
-    return (
-        <div className={`min-h-screen ${BG_LIGHT} dark:${BG_DARK} ${TEXT_PRIMARY} transition-colors duration-500`}>
-            <GlobalStyles />
-            <HeaderNav 
-                isDark={isDark} 
-                toggleDark={toggleDark} 
-                activeId={activeId} 
-                toggleMenu={toggleMenu} 
-                isMenuOpen={isMenuOpen} 
-            />
+            // 2. Load Theme
+            const storedTheme = localStorage.getItem('theme');
+            if (storedTheme === 'dark' || (!storedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                isDark = true;
+            }
+            updateThemeClass();
+            
+            // 3. Render Dynamic Content
+            renderDarkModeToggle();
+            renderProjects();
+            renderSkillsAndProcess();
+            renderPlayground();
+            renderTestimonials();
+            renderContactLinks();
+            updateNavLinks(); // Initial render of navigation
 
-            <main className="pt-16">
-                
-                {/* 1. HERO / LANDING */}
-                <section id="hero" className="relative h-[90vh] flex items-center overflow-hidden section-padding pt-24" ref={heroRef}>
-                    <div className="max-w-4xl">
-                        <p className={`text-lg md:text-xl font-medium mb-4 transition-opacity duration-1000 ${TEXT_SECONDARY}`}>
-                            Hi, I’m Madhuri — Graphic & Visual Designer.
-                        </p>
-                        <h1 className={`text-5xl md:text-7xl lg:text-8xl font-extrabold headline leading-tight mb-8 transition-opacity duration-1000 ${TEXT_PRIMARY}`}>
-                            I design <span className={`${THEME_ACCENT}`}>bold, clear visuals</span> that convert and impress.
-                        </h1>
-                        <p className={`text-xl md:text-2xl mb-12 max-w-2xl ${TEXT_SECONDARY} transition-opacity duration-1000`}>
-                            Specializing in cohesive branding, high-impact social media campaigns, and elegant digital design for premium, purpose-driven brands.
-                        </p>
+            // 4. Setup Observers & Listeners
+            setupIntersectionObserver();
+            
+            // 5. Setup Parallax listener
+            window.addEventListener('scroll', handleScroll);
+            
+            // 6. Initial render of all icons (if not rendered by dynamic content)
+            lucide.createIcons(); 
+        });
 
-                        <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6">
-                            <button 
-                                onClick={() => scrollToSection('work')}
-                                className={`px-8 py-3 rounded-full font-bold text-lg shadow-lg transform transition-all duration-300 ${PRIMARY_ACCENT} hover:shadow-xl hover:scale-[1.02]`}
-                            >
-                                View Selected Work
-                            </button>
-                            <a 
-                                href="#" // Placeholder link
-                                className={`px-8 py-3 rounded-full font-semibold text-lg border-2 ${THEME_ACCENT} border-current transition-colors duration-300 hover:bg-gray-200 dark:hover:bg-gray-800 flex items-center justify-center`}
-                            >
-                                Download Resume <Download className="w-5 h-5 ml-2" />
-                            </a>
-                        </div>
-                    </div>
-                    
-                    {/* Hero Visuals (Parallax Element) */}
-                    <div id="hero-visuals" className="absolute right-0 top-1/2 -translate-y-1/2 w-full max-w-md lg:max-w-xl h-full hidden md:block">
-                        <div className="absolute top-1/4 left-1/4 w-40 h-40 bg-gray-200 dark:bg-gray-800 rounded-3xl rotate-12 shadow-2xl"></div>
-                        <div className={`absolute bottom-1/4 right-1/4 w-64 h-48 ${THEME_ACCENT.replace('text-', 'bg-').split(' ')[0]}/50 rounded-2xl -rotate-6 shadow-2xl backdrop-blur-md`}></div>
-                        <div className="absolute top-1/3 right-1/4 w-32 h-32 bg-gray-300 dark:bg-gray-700 rounded-full shadow-2xl"></div>
-                    </div>
-                </section>
-
-                {/* 2. SELECTED WORK / CASE STUDIES */}
-                <ScrollAnimate id="work">
-                    <h2 className={`text-4xl md:text-5xl font-extrabold headline mb-12 ${TEXT_PRIMARY}`}>Selected Work.</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {projects.map(p => (
-                            <ProjectCard 
-                                key={p.id} 
-                                project={p} 
-                                setLightboxContent={setLightboxContent} 
-                            />
-                        ))}
-                    </div>
-                </ScrollAnimate>
-
-                {/* 3. ABOUT */}
-                <ScrollAnimate id="about">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
-                        {/* Image/Avatar Placeholder */}
-                        <div className="flex justify-center lg:justify-start">
-                            <div className="w-48 h-48 bg-gray-200 dark:bg-gray-800 rounded-full flex items-center justify-center shadow-xl">
-                                <span className="text-4xl font-bold ${TEXT_SECONDARY}">M.</span>
-                            </div>
-                        </div>
-
-                        {/* Bio Text */}
-                        <div className="lg:col-span-2">
-                            <h2 className={`text-4xl md:text-5xl font-extrabold headline mb-6 ${TEXT_PRIMARY}`}>About Me.</h2>
-                            <p className={`text-xl mb-8 ${TEXT_SECONDARY} max-w-3xl`}>
-                                With **9+ years of experience**, I partner with fast-growing startups and established organizations to refine their visual identity and create assets that drive business results. My style is a blend of minimal design principles and expressive typography, focusing on clarity and emotional resonance. I love transforming complex ideas into simple, high-impact visuals.
-                            </p>
-                        </div>
-                    </div>
-                    
-                    {/* Stats */}
-                    <div className="mt-12 pt-8 border-t dark:border-gray-700 grid grid-cols-1 sm:grid-cols-3 gap-8 text-center">
-                        {[
-                            { value: "9+", label: "Years Experience" },
-                            { value: "100+", label: "Successful Projects" },
-                            { value: "10+", label: "Industries Served" }
-                        ].map((stat, index) => (
-                            <div key={index}>
-                                <div className={`text-4xl font-extrabold headline mb-1 ${THEME_ACCENT}`}>{stat.value}</div>
-                                <p className={`text-lg font-medium ${TEXT_SECONDARY}`}>{stat.label}</p>
-                            </div>
-                        ))}
-                    </div>
-                </ScrollAnimate>
-
-                {/* 4. SKILLS & TOOLS */}
-                <ScrollAnimate id="skills">
-                    <h2 className={`text-4xl md:text-5xl font-extrabold headline mb-12 ${TEXT_PRIMARY}`}>Skills & Tools.</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                        {/* Core Skills */}
-                        <div>
-                            <h3 className={`text-2xl font-bold mb-6 ${TEXT_PRIMARY}`}>Core Skills</h3>
-                            <ul className={`space-y-4 text-lg ${TEXT_SECONDARY}`}>
-                                {["Branding & Visual Identity", "High-Impact Social Media Design", "UI Design for Web & App", "Presentation & Deck Design", "Packaging Concepts & Strategy", "Campaign Creative Direction"].map((skill, index) => (
-                                    <li key={index} className="flex items-start">
-                                        <ArrowRight className={`w-5 h-5 mr-3 mt-1 shrink-0 ${THEME_ACCENT}`} />
-                                        {skill}
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-
-                        {/* Tools */}
-                        <div>
-                            <h3 className={`text-2xl font-bold mb-6 ${TEXT_PRIMARY}`}>Design Tools</h3>
-                            <div className="flex flex-wrap gap-3">
-                                {["Figma (Primary)", "Adobe Photoshop", "Adobe Illustrator", "Adobe InDesign", "Canva", "After Effects", "Webflow (Basic)", "Procreate"].map((tool, index) => (
-                                    <span 
-                                        key={index}
-                                        className={`px-4 py-2 text-md font-semibold rounded-full border transition-all duration-300 cursor-default
-                                            ${tool.includes('Primary') 
-                                                ? `${PRIMARY_ACCENT} shadow-md` 
-                                                : `border-gray-300 dark:border-gray-700 ${TEXT_SECONDARY} hover:bg-gray-100 dark:hover:bg-gray-700`
-                                            }
-                                        `}
-                                    >
-                                        {tool}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </ScrollAnimate>
-
-                {/* 5. PROCESS */}
-                <ScrollAnimate id="process">
-                    <h2 className={`text-4xl md:text-5xl font-extrabold headline mb-12 ${TEXT_PRIMARY}`}>My 4-Step Process.</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {[
-                            { title: "Discover", icon: Aperture, desc: "Understanding your unique business goals, audience, and market position." },
-                            { title: "Define", icon: Trello, desc: "Translating insights into a clear visual strategy, mood boards, and key deliverables." },
-                            { title: "Design", icon: Zap, desc: "Iterative design and development of all assets—from concept to final execution." },
-                            { title: "Deliver", icon: Package, desc: "Handoff of final, organized files, and clear guidelines for smooth implementation." }
-                        ].map((step, index) => (
-                            <div 
-                                key={index} 
-                                className={`p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-lg ${BG_LIGHT} dark:bg-gray-900 transition-transform duration-300 hover:scale-[1.03]`}
-                            >
-                                <step.icon className={`w-8 h-8 mb-4 ${THEME_ACCENT}`} />
-                                <h3 className={`text-xl font-bold mb-2 ${TEXT_PRIMARY}`}>{step.title}</h3>
-                                <p className={TEXT_SECONDARY}>{step.desc}</p>
-                            </div>
-                        ))}
-                    </div>
-                </ScrollAnimate>
-
-                {/* 6. PLAYGROUND / EXPERIMENTS */}
-                <ScrollAnimate id="playground">
-                    <h2 className={`text-4xl md:text-5xl font-extrabold headline mb-12 ${TEXT_PRIMARY}`}>Playground & Experiments.</h2>
-                    <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
-                        {[
-                            { img: '800x1200', text: 'Experimental Typography Poster' },
-                            { img: '1000x800', text: 'Abstract Digital Painting' },
-                            { img: '600x600', text: '3D Render Concept' },
-                            { img: '1200x900', text: 'Branding Mockup Iteration' },
-                            { img: '700x1000', text: 'Geometric Pattern Study' },
-                            { img: '900x700', text: 'Vector Illustration Series' },
-                        ].map((item, index) => (
-                            <div 
-                                key={index} 
-                                className="break-inside-avoid relative group overflow-hidden rounded-lg shadow-md cursor-pointer transition-transform duration-300 hover:scale-[1.03]"
-                            >
-                                <img
-                                    src={`https://placehold.co/${item.img}/374151/FFFFFF?text=Experiment+${index+1}`}
-                                    alt={item.text}
-                                    className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110"
-                                    onError={(e) => { e.target.onerror = null; e.target.src = `https://placehold.co/${item.img}/374151/FFFFFF?text=Experiment+${index+1}` }}
-                                />
-                                <div className={`absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300`}>
-                                    <p className="text-white text-center font-bold p-4">{item.text}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </ScrollAnimate>
-
-                {/* 7. TESTIMONIALS */}
-                <ScrollAnimate id="testimonials">
-                    <h2 className={`text-4xl md:text-5xl font-extrabold headline mb-12 ${TEXT_PRIMARY}`}>What Clients Say.</h2>
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        {[
-                            { quote: "Madhuri’s design work not only looked incredible but fundamentally changed how our audience perceived our brand. She’s professional, fast, and highly conceptual.", name: "Anya Sharma", role: "Creative Director", company: "Flux Agency" },
-                            { quote: "Hiring Madhuri was the best decision for our new product launch. The UI/UX was clean, intuitive, and resulted in a 45% uplift in conversion rate.", name: "David Chen", role: "Founder & CEO", company: "SwiftFlow" },
-                            { quote: "She takes complex technical briefs and distills them into beautiful, accessible visuals. Her attention to detail is unmatched.", name: "Priya Singh", role: "Marketing Manager", company: "InnovateTech" },
-                        ].map((t, index) => (
-                            <div 
-                                key={index} 
-                                className={`p-8 rounded-xl border-2 border-gray-200 dark:border-gray-800 shadow-xl ${BG_LIGHT} dark:bg-gray-900 transition-transform duration-300 hover:scale-[1.02] hover:shadow-2xl`}
-                            >
-                                <blockquote className={`text-xl italic mb-4 ${TEXT_PRIMARY}`}>"{t.quote}"</blockquote>
-                                <p className="font-semibold ${THEME_ACCENT} mt-4">{t.name}</p>
-                                <p className={TEXT_SECONDARY}>{t.role} at {t.company}</p>
-                            </div>
-                        ))}
-                    </div>
-                </ScrollAnimate>
-
-                {/* 8. CONTACT / WORK WITH ME */}
-                <ScrollAnimate id="contact">
-                    <div className="max-w-4xl mx-auto text-center">
-                        <h2 className={`text-5xl md:text-6xl font-extrabold headline mb-4 ${THEME_ACCENT}`}>Let's work together.</h2>
-                        <p className={`text-xl mb-12 ${TEXT_SECONDARY}`}>
-                            Available for full-time remote/on-site roles and freelance projects. Let's create something memorable and effective.
-                        </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-6xl mx-auto">
-                        {/* Contact Form */}
-                        <form className="p-8 rounded-xl shadow-2xl bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
-                                <input type="text" placeholder="Name" className={`form-input`} />
-                                <input type="email" placeholder="Email" className={`form-input`} />
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
-                                <select className={`form-input ${TEXT_SECONDARY}`}>
-                                    <option>Project Type</option>
-                                    <option>Branding</option>
-                                    <option>UI/Web Design</option>
-                                    <option>Social Campaign</option>
-                                    <option>Other</option>
-                                </select>
-                                <select className={`form-input ${TEXT_SECONDARY}`}>
-                                    <option>Budget Range</option>
-                                    <option>Less than $5k</option>
-                                    <option>$5k – $10k</option>
-                                    <option>$10k+</option>
-                                    <option>TBD / Full-time</option>
-                                </select>
-                            </div>
-                            <textarea placeholder="Tell me about your project..." rows="5" className={`form-input mb-6`}></textarea>
-                            <button type="submit" className={`w-full py-3 rounded-lg font-bold text-lg shadow-lg transform transition-all duration-300 ${PRIMARY_ACCENT} hover:shadow-xl hover:scale-[1.01]`}>
-                                Send Message
-                            </button>
-                            <style>{`
-                                .form-input {
-                                    width: 100%;
-                                    padding: 0.75rem;
-                                    border-radius: 0.5rem;
-                                    border: 1px solid #e5e7eb;
-                                    transition: border-color 0.3s, box-shadow 0.3s;
-                                    background-color: ${isDark ? '#374151' : '#ffffff'};
-                                    color: ${isDark ? '#f9fafb' : '#1f2937'};
-                                }
-                                .form-input:focus {
-                                    outline: none;
-                                    border-color: #007AFF;
-                                    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
-                                }
-                                .dark .form-input:focus {
-                                    border-color: #50c878;
-                                    box-shadow: 0 0 0 3px rgba(80, 200, 120, 0.2);
-                                }
-                            `}</style>
-                        </form>
-
-                        {/* Direct Links */}
-                        <div className="space-y-6 lg:mt-8">
-                            <h3 className={`text-2xl font-bold mb-4 ${TEXT_PRIMARY}`}>Find Me Online</h3>
-                            {[
-                                { icon: Mail, label: "Email Me", link: "mailto:madhuri@designer.com", handle: "madhuri@designer.com" },
-                                { icon: Briefcase, label: "LinkedIn", link: "#", handle: "@madhuridesign" },
-                                { icon: Code, label: "Behance", link: "#", handle: "/MadhuriBehance" },
-                                { icon: Instagram, label: "Instagram Portfolio", link: "#", handle: "@madhuri.visuals" }
-                            ].map((link, index) => (
-                                <a 
-                                    key={index} 
-                                    href={link.link} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="flex items-center p-4 rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-lg bg-gray-100 dark:bg-gray-800"
-                                >
-                                    <link.icon className={`w-7 h-7 mr-4 ${THEME_ACCENT} shrink-0`} />
-                                    <div>
-                                        <p className={`font-semibold text-lg ${TEXT_PRIMARY}`}>{link.label}</p>
-                                        <p className={`text-sm ${TEXT_SECONDARY}`}>{link.handle}</p>
-                                    </div>
-                                </a>
-                            ))}
-                        </div>
-                    </div>
-                </ScrollAnimate>
-            </main>
-
-            {/* Floating "Let's Talk" CTA */}
-            {activeId !== 'contact' && (
-                <button
-                    onClick={() => scrollToSection('contact')}
-                    className={`fixed bottom-6 right-6 lg:bottom-10 lg:right-10 px-6 py-3 rounded-full font-bold text-lg shadow-2xl transition-all duration-300 transform ${PRIMARY_ACCENT} hover:scale-[1.05] z-50`}
-                >
-                    Let's Talk
-                </button>
-            )}
-
-            {/* Case Study Lightbox */}
-            <Lightbox 
-                content={lightboxContent} 
-                setLightboxContent={setLightboxContent} 
-            />
-
-            {/* FOOTER */}
-            <footer className="mt-20 py-8 border-t border-gray-200 dark:border-gray-800 ${TEXT_SECONDARY} text-center">
-                <p className="mb-2">Madhuri &copy; {new Date().getFullYear()}</p>
-                <p className="text-sm">Designed with love & a lot of coffee. Crafted in React + Tailwind.</p>
-            </footer>
-        </div>
-    );
-}
+    </script>
+</body>
+</html>
