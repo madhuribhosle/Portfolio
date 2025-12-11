@@ -1,0 +1,728 @@
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Menu, X, Sun, Moon, ArrowRight, Download, Mail, Linkedin, Instagram, Aperture, Briefcase, Zap, Trello, Package, Code } from 'lucide-react';
+
+// --- CONFIGURATION ---
+const THEME_ACCENT = 'text-[#007AFF] dark:text-[#50c878]'; // Electric Blue | Neon Green for Dark Mode
+const PRIMARY_ACCENT = 'bg-[#007AFF] hover:bg-[#005bb5] dark:bg-[#50c878] dark:hover:bg-[#3d9a5b] text-white transition-all duration-300';
+const BG_LIGHT = 'bg-[#FCFCF7]'; // Warm Off-White
+const BG_DARK = 'bg-[#1A1A1A]'; // Deep Charcoal
+const TEXT_PRIMARY = 'text-gray-900 dark:text-gray-50';
+const TEXT_SECONDARY = 'text-gray-600 dark:text-gray-400';
+const SECTION_IDS = ['hero', 'work', 'about', 'skills', 'process', 'playground', 'testimonials', 'contact'];
+
+// Utility function for smooth scrolling
+const scrollToSection = (id) => {
+    document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+};
+
+// Custom Hook for Section Observation (Active Nav Highlighting)
+const useActiveSection = (sectionIds) => {
+    const [activeId, setActiveId] = useState(sectionIds[0]);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        setActiveId(entry.target.id);
+                    }
+                });
+            },
+            {
+                rootMargin: '-30% 0px -70% 0px', // Adjusted to trigger closer to the center of the viewport
+                threshold: 0,
+            }
+        );
+
+        sectionIds.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                observer.observe(element);
+            }
+        });
+
+        return () => {
+            sectionIds.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    observer.unobserve(element);
+                }
+            });
+        };
+    }, [sectionIds]);
+
+    return activeId;
+};
+
+// --- COMPONENTS ---
+
+// 1. Dark Mode Toggle
+const DarkModeToggle = ({ isDark, toggleDark }) => (
+    <button
+        onClick={toggleDark}
+        aria-label="Toggle dark mode"
+        className={`p-2 rounded-full transition-colors duration-300 ${TEXT_PRIMARY} hover:bg-gray-200 dark:hover:bg-gray-800`}
+    >
+        {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+    </button>
+);
+
+// 2. Navigation
+const HeaderNav = ({ isDark, toggleDark, activeId, toggleMenu, isMenuOpen }) => {
+    const navItems = [
+        { name: 'Work', id: 'work' },
+        { name: 'About', id: 'about' },
+        { name: 'Skills', id: 'skills' },
+        { name: 'Process', id: 'process' },
+        { name: 'Playground', id: 'playground' },
+        { name: 'Testimonials', id: 'testimonials' },
+        { name: 'Contact', id: 'contact' },
+    ];
+
+    const NavLink = ({ item }) => (
+        <button
+            onClick={() => { scrollToSection(item.id); if (isMenuOpen) toggleMenu(); }}
+            className={`
+                px-3 py-1 text-sm font-medium transition-all duration-300
+                hover:text-gray-900 dark:hover:text-white
+                ${activeId === item.id 
+                    ? `${THEME_ACCENT} font-bold border-b-2 border-current`
+                    : `${TEXT_SECONDARY} dark:hover:text-gray-50`
+                }
+            `}
+        >
+            {item.name}
+        </button>
+    );
+
+    return (
+        <header className={`sticky top-0 z-50 w-full backdrop-blur-md bg-opacity-95 shadow-lg ${BG_LIGHT} dark:${BG_DARK}`}>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+                <button 
+                    onClick={() => scrollToSection('hero')}
+                    className={`text-xl font-extrabold ${TEXT_PRIMARY} tracking-tight hover:${THEME_ACCENT} transition-colors duration-300`}
+                >
+                    Madhuri.
+                </button>
+
+                {/* Desktop Nav */}
+                <nav className="hidden lg:flex space-x-6">
+                    {navItems.map(item => <NavLink key={item.id} item={item} />)}
+                </nav>
+
+                <div className="flex items-center space-x-3">
+                    <DarkModeToggle isDark={isDark} toggleDark={toggleDark} />
+                    {/* Mobile Menu Button */}
+                    <button
+                        className={`lg:hidden p-2 rounded-full ${TEXT_PRIMARY} hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors`}
+                        onClick={toggleMenu}
+                    >
+                        {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                    </button>
+                </div>
+            </div>
+
+            {/* Mobile Menu Overlay */}
+            {isMenuOpen && (
+                <div className={`fixed inset-0 z-40 lg:hidden ${BG_LIGHT} dark:${BG_DARK} ${TEXT_PRIMARY} transition-opacity duration-300 flex flex-col items-center justify-center space-y-8`}>
+                    <div className="absolute top-4 right-4">
+                        <button
+                            className={`p-2 rounded-full ${TEXT_PRIMARY} hover:bg-gray-200 dark:hover:bg-gray-800`}
+                            onClick={toggleMenu}
+                        >
+                            <X className="w-8 h-8" />
+                        </button>
+                    </div>
+                    {navItems.map(item => (
+                        <button
+                            key={item.id}
+                            onClick={() => { scrollToSection(item.id); toggleMenu(); }}
+                            className={`text-3xl font-bold transition-all duration-300 py-3 w-4/5 text-center rounded-lg
+                                ${activeId === item.id ? THEME_ACCENT : TEXT_PRIMARY} 
+                                hover:bg-gray-200 dark:hover:bg-gray-800
+                            `}
+                        >
+                            {item.name}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </header>
+    );
+};
+
+// 3. Project Card Component
+const ProjectCard = ({ project, setLightboxContent }) => {
+    return (
+        <div
+            className={`
+                group rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl 
+                transition-all duration-500 transform hover:scale-[1.01] cursor-pointer
+                ${BG_LIGHT} dark:bg-gray-800 border dark:border-gray-700
+                relative
+            `}
+            onClick={() => setLightboxContent(project)}
+        >
+            {/* Project Thumbnail Image */}
+            <div className="w-full aspect-[4/3] overflow-hidden">
+                <img
+                    src={project.image}
+                    alt={project.title}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    onError={(e) => { e.target.onerror = null; e.target.src = `https://placehold.co/600x450/${project.color}/FFFFFF?text=${project.title.split(' ')[0]}` }}
+                />
+            </div>
+            
+            {/* Tags */}
+            <div className="p-4 flex flex-wrap gap-2 absolute top-0 left-0">
+                {project.tags.map(tag => (
+                    <span key={tag} className={`px-2 py-0.5 text-xs font-semibold rounded-full bg-black/70 text-white dark:bg-white/70 dark:text-gray-900 backdrop-blur-sm`}>
+                        {tag}
+                    </span>
+                ))}
+            </div>
+
+
+            <div className="p-6">
+                <h3 className={`text-2xl font-bold mb-1 ${TEXT_PRIMARY}`}>{project.title}</h3>
+                <p className={`text-md ${TEXT_SECONDARY} mb-4`}>{project.description}</p>
+                
+                {/* Hover Microinteraction */}
+                <div 
+                    className={`
+                        flex items-center ${THEME_ACCENT} font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300
+                        transform translate-x-0 group-hover:translate-x-0
+                    `}
+                >
+                    View Case Study <ArrowRight className="w-5 h-5 ml-2 transition-transform duration-300 group-hover:translate-x-1" />
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// 4. Case Study Lightbox Overlay
+const Lightbox = ({ content, setLightboxContent }) => {
+    if (!content) return null;
+
+    return (
+        <div 
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900 bg-opacity-80 backdrop-blur-sm transition-opacity duration-300"
+            onClick={() => setLightboxContent(null)}
+        >
+            <div 
+                className={`w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-xl shadow-2xl relative ${BG_LIGHT} dark:${BG_DARK} transform transition-transform duration-500 scale-100`}
+                onClick={e => e.stopPropagation()} // Prevent closing when clicking inside
+            >
+                {/* Close Button */}
+                <button
+                    className={`absolute top-4 right-4 p-2 rounded-full ${PRIMARY_ACCENT} z-10`}
+                    onClick={() => setLightboxContent(null)}
+                >
+                    <X className="w-6 h-6" />
+                </button>
+                
+                {/* Content */}
+                <div className="p-8 md:p-12">
+                    <img src={content.image} alt={content.title} className="w-full h-auto rounded-lg mb-6 shadow-md" />
+                    <h2 className={`text-4xl font-extrabold mb-3 ${TEXT_PRIMARY}`}>{content.title}</h2>
+                    <div className="flex flex-wrap gap-3 mb-6">
+                         {content.tags.map(tag => (
+                            <span key={tag} className={`px-3 py-1 text-sm font-medium rounded-full ${THEME_ACCENT} border border-current`}>
+                                {tag}
+                            </span>
+                        ))}
+                    </div>
+                    
+                    <p className={`text-lg mb-6 ${TEXT_SECONDARY}`}>{content.longDescription}</p>
+
+                    <h3 className={`text-2xl font-bold mb-3 ${TEXT_PRIMARY}`}>Key Results</h3>
+                    <ul className={`space-y-2 ${TEXT_SECONDARY} list-disc list-inside`}>
+                        <li>**+45%** Conversion Rate uplift from revised landing UI.</li>
+                        <li>**120k+** Impressions generated from the social media campaign.</li>
+                        <li>**Final Deliverables:** Brand Style Guide, Component Library, Print-Ready Packaging Files.</li>
+                    </ul>
+
+                    <p className={`mt-8 text-sm italic ${TEXT_SECONDARY}`}>
+                        *This is a case study mockup. In the live portfolio, you would link to a dedicated, detailed presentation of this work.*
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// 5. Scroll Animation Wrapper
+const ScrollAnimate = ({ children, id }) => {
+    const ref = useRef(null);
+    useEffect(() => {
+        const currentRef = ref.current;
+        if (!currentRef) return;
+
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    currentRef.classList.add('is-visible');
+                }
+            },
+            {
+                threshold: 0.15, // Starts animation when 15% of the element is visible
+            }
+        );
+
+        observer.observe(currentRef);
+
+        return () => {
+            if (currentRef) observer.unobserve(currentRef);
+        };
+    }, []);
+
+    return (
+        <section 
+            id={id} 
+            ref={ref} 
+            className="opacity-0 transition-all duration-1000 transform translate-y-12 section-padding is-hidden"
+        >
+            {children}
+        </section>
+    );
+};
+
+// Global CSS for Scroll Animation and Parallax
+const GlobalStyles = () => (
+    <style>
+        {`
+        /* Custom Font Import */
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+        
+        /* Apply smooth scroll */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Set base font */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Define bold heading style */
+        .headline {
+            font-family: 'Outfit', sans-serif;
+            letter-spacing: -0.05em;
+        }
+
+        /* Scroll Animation States */
+        .is-hidden {
+            opacity: 0;
+            transform: translateY(3rem);
+        }
+
+        .is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Section Padding */
+        .section-padding {
+            padding-top: 5rem;
+            padding-bottom: 5rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        /* Hero Parallax Effect */
+        #hero-visuals {
+            transform: translateY(var(--scroll-y));
+            transition: transform 0.1s linear;
+        }
+        
+        /* Glassmorphism on hover for work cards */
+        .group:hover .glass-effect {
+            backdrop-filter: blur(8px);
+            background-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Utility for list marker colors in dark mode */
+        .dark .list-disc > li::marker {
+            color: #50c878; /* Neon Green */
+        }
+        `}
+    </style>
+);
+
+
+// --- MAIN APP COMPONENT ---
+export default function App() {
+    const [isDark, setIsDark] = useState(false);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [lightboxContent, setLightboxContent] = useState(null);
+    const activeId = useActiveSection(SECTION_IDS);
+    const heroRef = useRef(null);
+
+    // Load theme preference
+    useEffect(() => {
+        const storedTheme = localStorage.getItem('theme');
+        if (storedTheme === 'dark' || (!storedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            setIsDark(true);
+        }
+    }, []);
+
+    // Apply theme class and save preference
+    useEffect(() => {
+        if (isDark) {
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+        }
+    }, [isDark]);
+
+    const toggleDark = useCallback(() => setIsDark(prev => !prev), []);
+    const toggleMenu = useCallback(() => setIsMenuOpen(prev => !prev), []);
+
+    // Simple Parallax Effect for Hero Visuals
+    useEffect(() => {
+        const handleScroll = () => {
+            const y = window.scrollY;
+            const visual = document.getElementById('hero-visuals');
+            if (visual) {
+                // Subtle parallax (adjust 0.2 factor for strength)
+                visual.style.transform = `translateY(${y * 0.2}px)`;
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    const projects = [
+        { id: 1, title: "Skincare E-commerce Revamp", description: "UI/UX and campaign creative for a minimalist beauty brand.", tags: ["UI/UX", "E-commerce", "Branding"], image: "https://placehold.co/800x600/1e40af/FFFFFF?text=Project+Mockup+01", color: "1e40af", longDescription: "Designed the complete visual identity and user interface for a clean skincare brand, focusing on high-conversion landing pages and accessible mobile design. Included social media ad templates and a comprehensive brand book." },
+        { id: 2, title: "Global Fintech Brand Identity", description: "Full logo system, color palette, and visual guidelines.", tags: ["Branding", "Strategy", "Print"], image: "https://placehold.co/800x600/ef4444/FFFFFF?text=Project+Mockup+02", color: "ef4444", longDescription: "Developed a confident, modern brand identity for a B2B fintech solution. The brief required a clean, trustworthy look that stood out from traditional financial institutions. Deliverables included stationery and pitch deck templates." },
+        { id: 3, title: "Summer Campaign Creative", description: "High-impact assets for a seasonal fashion launch across digital channels.", tags: ["Social Media", "Campaign", "Motion"], image: "https://placehold.co/800x600/10b981/FFFFFF?text=Project+Mockup+03", color: "10b981", longDescription: "Managed creative direction and asset production for a large-scale summer campaign. Focus was on motion graphics for Instagram/TikTok and dynamic banner ads. Achieved record-high click-through rates (CTRs) for the client." },
+        { id: 4, title: "SaaS App Onboarding Flow", description: "Illustration style and in-app guidance for a complex productivity tool.", tags: ["UI/UX", "Illustration"], image: "https://placehold.co/800x600/f59e0b/FFFFFF?text=Project+Mockup+04", color: "f59e0b", longDescription: "Simplified the initial user experience (onboarding) for a technical SaaS product by introducing custom, friendly illustrations and clearer micro-copy, drastically reducing initial user drop-off." },
+    ];
+
+    return (
+        <div className={`min-h-screen ${BG_LIGHT} dark:${BG_DARK} ${TEXT_PRIMARY} transition-colors duration-500`}>
+            <GlobalStyles />
+            <HeaderNav 
+                isDark={isDark} 
+                toggleDark={toggleDark} 
+                activeId={activeId} 
+                toggleMenu={toggleMenu} 
+                isMenuOpen={isMenuOpen} 
+            />
+
+            <main className="pt-16">
+                
+                {/* 1. HERO / LANDING */}
+                <section id="hero" className="relative h-[90vh] flex items-center overflow-hidden section-padding pt-24" ref={heroRef}>
+                    <div className="max-w-4xl">
+                        <p className={`text-lg md:text-xl font-medium mb-4 transition-opacity duration-1000 ${TEXT_SECONDARY}`}>
+                            Hi, I’m Madhuri — Graphic & Visual Designer.
+                        </p>
+                        <h1 className={`text-5xl md:text-7xl lg:text-8xl font-extrabold headline leading-tight mb-8 transition-opacity duration-1000 ${TEXT_PRIMARY}`}>
+                            I design <span className={`${THEME_ACCENT}`}>bold, clear visuals</span> that convert and impress.
+                        </h1>
+                        <p className={`text-xl md:text-2xl mb-12 max-w-2xl ${TEXT_SECONDARY} transition-opacity duration-1000`}>
+                            Specializing in cohesive branding, high-impact social media campaigns, and elegant digital design for premium, purpose-driven brands.
+                        </p>
+
+                        <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6">
+                            <button 
+                                onClick={() => scrollToSection('work')}
+                                className={`px-8 py-3 rounded-full font-bold text-lg shadow-lg transform transition-all duration-300 ${PRIMARY_ACCENT} hover:shadow-xl hover:scale-[1.02]`}
+                            >
+                                View Selected Work
+                            </button>
+                            <a 
+                                href="#" // Placeholder link
+                                className={`px-8 py-3 rounded-full font-semibold text-lg border-2 ${THEME_ACCENT} border-current transition-colors duration-300 hover:bg-gray-200 dark:hover:bg-gray-800 flex items-center justify-center`}
+                            >
+                                Download Resume <Download className="w-5 h-5 ml-2" />
+                            </a>
+                        </div>
+                    </div>
+                    
+                    {/* Hero Visuals (Parallax Element) */}
+                    <div id="hero-visuals" className="absolute right-0 top-1/2 -translate-y-1/2 w-full max-w-md lg:max-w-xl h-full hidden md:block">
+                        <div className="absolute top-1/4 left-1/4 w-40 h-40 bg-gray-200 dark:bg-gray-800 rounded-3xl rotate-12 shadow-2xl"></div>
+                        <div className={`absolute bottom-1/4 right-1/4 w-64 h-48 ${THEME_ACCENT.replace('text-', 'bg-').split(' ')[0]}/50 rounded-2xl -rotate-6 shadow-2xl backdrop-blur-md`}></div>
+                        <div className="absolute top-1/3 right-1/4 w-32 h-32 bg-gray-300 dark:bg-gray-700 rounded-full shadow-2xl"></div>
+                    </div>
+                </section>
+
+                {/* 2. SELECTED WORK / CASE STUDIES */}
+                <ScrollAnimate id="work">
+                    <h2 className={`text-4xl md:text-5xl font-extrabold headline mb-12 ${TEXT_PRIMARY}`}>Selected Work.</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {projects.map(p => (
+                            <ProjectCard 
+                                key={p.id} 
+                                project={p} 
+                                setLightboxContent={setLightboxContent} 
+                            />
+                        ))}
+                    </div>
+                </ScrollAnimate>
+
+                {/* 3. ABOUT */}
+                <ScrollAnimate id="about">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
+                        {/* Image/Avatar Placeholder */}
+                        <div className="flex justify-center lg:justify-start">
+                            <div className="w-48 h-48 bg-gray-200 dark:bg-gray-800 rounded-full flex items-center justify-center shadow-xl">
+                                <span className="text-4xl font-bold ${TEXT_SECONDARY}">M.</span>
+                            </div>
+                        </div>
+
+                        {/* Bio Text */}
+                        <div className="lg:col-span-2">
+                            <h2 className={`text-4xl md:text-5xl font-extrabold headline mb-6 ${TEXT_PRIMARY}`}>About Me.</h2>
+                            <p className={`text-xl mb-8 ${TEXT_SECONDARY} max-w-3xl`}>
+                                With **9+ years of experience**, I partner with fast-growing startups and established organizations to refine their visual identity and create assets that drive business results. My style is a blend of minimal design principles and expressive typography, focusing on clarity and emotional resonance. I love transforming complex ideas into simple, high-impact visuals.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    {/* Stats */}
+                    <div className="mt-12 pt-8 border-t dark:border-gray-700 grid grid-cols-1 sm:grid-cols-3 gap-8 text-center">
+                        {[
+                            { value: "9+", label: "Years Experience" },
+                            { value: "100+", label: "Successful Projects" },
+                            { value: "10+", label: "Industries Served" }
+                        ].map((stat, index) => (
+                            <div key={index}>
+                                <div className={`text-4xl font-extrabold headline mb-1 ${THEME_ACCENT}`}>{stat.value}</div>
+                                <p className={`text-lg font-medium ${TEXT_SECONDARY}`}>{stat.label}</p>
+                            </div>
+                        ))}
+                    </div>
+                </ScrollAnimate>
+
+                {/* 4. SKILLS & TOOLS */}
+                <ScrollAnimate id="skills">
+                    <h2 className={`text-4xl md:text-5xl font-extrabold headline mb-12 ${TEXT_PRIMARY}`}>Skills & Tools.</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                        {/* Core Skills */}
+                        <div>
+                            <h3 className={`text-2xl font-bold mb-6 ${TEXT_PRIMARY}`}>Core Skills</h3>
+                            <ul className={`space-y-4 text-lg ${TEXT_SECONDARY}`}>
+                                {["Branding & Visual Identity", "High-Impact Social Media Design", "UI Design for Web & App", "Presentation & Deck Design", "Packaging Concepts & Strategy", "Campaign Creative Direction"].map((skill, index) => (
+                                    <li key={index} className="flex items-start">
+                                        <ArrowRight className={`w-5 h-5 mr-3 mt-1 shrink-0 ${THEME_ACCENT}`} />
+                                        {skill}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        {/* Tools */}
+                        <div>
+                            <h3 className={`text-2xl font-bold mb-6 ${TEXT_PRIMARY}`}>Design Tools</h3>
+                            <div className="flex flex-wrap gap-3">
+                                {["Figma (Primary)", "Adobe Photoshop", "Adobe Illustrator", "Adobe InDesign", "Canva", "After Effects", "Webflow (Basic)", "Procreate"].map((tool, index) => (
+                                    <span 
+                                        key={index}
+                                        className={`px-4 py-2 text-md font-semibold rounded-full border transition-all duration-300 cursor-default
+                                            ${tool.includes('Primary') 
+                                                ? `${PRIMARY_ACCENT} shadow-md` 
+                                                : `border-gray-300 dark:border-gray-700 ${TEXT_SECONDARY} hover:bg-gray-100 dark:hover:bg-gray-700`
+                                            }
+                                        `}
+                                    >
+                                        {tool}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </ScrollAnimate>
+
+                {/* 5. PROCESS */}
+                <ScrollAnimate id="process">
+                    <h2 className={`text-4xl md:text-5xl font-extrabold headline mb-12 ${TEXT_PRIMARY}`}>My 4-Step Process.</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                        {[
+                            { title: "Discover", icon: Aperture, desc: "Understanding your unique business goals, audience, and market position." },
+                            { title: "Define", icon: Trello, desc: "Translating insights into a clear visual strategy, mood boards, and key deliverables." },
+                            { title: "Design", icon: Zap, desc: "Iterative design and development of all assets—from concept to final execution." },
+                            { title: "Deliver", icon: Package, desc: "Handoff of final, organized files, and clear guidelines for smooth implementation." }
+                        ].map((step, index) => (
+                            <div 
+                                key={index} 
+                                className={`p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-lg ${BG_LIGHT} dark:bg-gray-900 transition-transform duration-300 hover:scale-[1.03]`}
+                            >
+                                <step.icon className={`w-8 h-8 mb-4 ${THEME_ACCENT}`} />
+                                <h3 className={`text-xl font-bold mb-2 ${TEXT_PRIMARY}`}>{step.title}</h3>
+                                <p className={TEXT_SECONDARY}>{step.desc}</p>
+                            </div>
+                        ))}
+                    </div>
+                </ScrollAnimate>
+
+                {/* 6. PLAYGROUND / EXPERIMENTS */}
+                <ScrollAnimate id="playground">
+                    <h2 className={`text-4xl md:text-5xl font-extrabold headline mb-12 ${TEXT_PRIMARY}`}>Playground & Experiments.</h2>
+                    <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
+                        {[
+                            { img: '800x1200', text: 'Experimental Typography Poster' },
+                            { img: '1000x800', text: 'Abstract Digital Painting' },
+                            { img: '600x600', text: '3D Render Concept' },
+                            { img: '1200x900', text: 'Branding Mockup Iteration' },
+                            { img: '700x1000', text: 'Geometric Pattern Study' },
+                            { img: '900x700', text: 'Vector Illustration Series' },
+                        ].map((item, index) => (
+                            <div 
+                                key={index} 
+                                className="break-inside-avoid relative group overflow-hidden rounded-lg shadow-md cursor-pointer transition-transform duration-300 hover:scale-[1.03]"
+                            >
+                                <img
+                                    src={`https://placehold.co/${item.img}/374151/FFFFFF?text=Experiment+${index+1}`}
+                                    alt={item.text}
+                                    className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-110"
+                                    onError={(e) => { e.target.onerror = null; e.target.src = `https://placehold.co/${item.img}/374151/FFFFFF?text=Experiment+${index+1}` }}
+                                />
+                                <div className={`absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300`}>
+                                    <p className="text-white text-center font-bold p-4">{item.text}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </ScrollAnimate>
+
+                {/* 7. TESTIMONIALS */}
+                <ScrollAnimate id="testimonials">
+                    <h2 className={`text-4xl md:text-5xl font-extrabold headline mb-12 ${TEXT_PRIMARY}`}>What Clients Say.</h2>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        {[
+                            { quote: "Madhuri’s design work not only looked incredible but fundamentally changed how our audience perceived our brand. She’s professional, fast, and highly conceptual.", name: "Anya Sharma", role: "Creative Director", company: "Flux Agency" },
+                            { quote: "Hiring Madhuri was the best decision for our new product launch. The UI/UX was clean, intuitive, and resulted in a 45% uplift in conversion rate.", name: "David Chen", role: "Founder & CEO", company: "SwiftFlow" },
+                            { quote: "She takes complex technical briefs and distills them into beautiful, accessible visuals. Her attention to detail is unmatched.", name: "Priya Singh", role: "Marketing Manager", company: "InnovateTech" },
+                        ].map((t, index) => (
+                            <div 
+                                key={index} 
+                                className={`p-8 rounded-xl border-2 border-gray-200 dark:border-gray-800 shadow-xl ${BG_LIGHT} dark:bg-gray-900 transition-transform duration-300 hover:scale-[1.02] hover:shadow-2xl`}
+                            >
+                                <blockquote className={`text-xl italic mb-4 ${TEXT_PRIMARY}`}>"{t.quote}"</blockquote>
+                                <p className="font-semibold ${THEME_ACCENT} mt-4">{t.name}</p>
+                                <p className={TEXT_SECONDARY}>{t.role} at {t.company}</p>
+                            </div>
+                        ))}
+                    </div>
+                </ScrollAnimate>
+
+                {/* 8. CONTACT / WORK WITH ME */}
+                <ScrollAnimate id="contact">
+                    <div className="max-w-4xl mx-auto text-center">
+                        <h2 className={`text-5xl md:text-6xl font-extrabold headline mb-4 ${THEME_ACCENT}`}>Let's work together.</h2>
+                        <p className={`text-xl mb-12 ${TEXT_SECONDARY}`}>
+                            Available for full-time remote/on-site roles and freelance projects. Let's create something memorable and effective.
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-6xl mx-auto">
+                        {/* Contact Form */}
+                        <form className="p-8 rounded-xl shadow-2xl bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+                                <input type="text" placeholder="Name" className={`form-input`} />
+                                <input type="email" placeholder="Email" className={`form-input`} />
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+                                <select className={`form-input ${TEXT_SECONDARY}`}>
+                                    <option>Project Type</option>
+                                    <option>Branding</option>
+                                    <option>UI/Web Design</option>
+                                    <option>Social Campaign</option>
+                                    <option>Other</option>
+                                </select>
+                                <select className={`form-input ${TEXT_SECONDARY}`}>
+                                    <option>Budget Range</option>
+                                    <option>Less than $5k</option>
+                                    <option>$5k – $10k</option>
+                                    <option>$10k+</option>
+                                    <option>TBD / Full-time</option>
+                                </select>
+                            </div>
+                            <textarea placeholder="Tell me about your project..." rows="5" className={`form-input mb-6`}></textarea>
+                            <button type="submit" className={`w-full py-3 rounded-lg font-bold text-lg shadow-lg transform transition-all duration-300 ${PRIMARY_ACCENT} hover:shadow-xl hover:scale-[1.01]`}>
+                                Send Message
+                            </button>
+                            <style>{`
+                                .form-input {
+                                    width: 100%;
+                                    padding: 0.75rem;
+                                    border-radius: 0.5rem;
+                                    border: 1px solid #e5e7eb;
+                                    transition: border-color 0.3s, box-shadow 0.3s;
+                                    background-color: ${isDark ? '#374151' : '#ffffff'};
+                                    color: ${isDark ? '#f9fafb' : '#1f2937'};
+                                }
+                                .form-input:focus {
+                                    outline: none;
+                                    border-color: #007AFF;
+                                    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+                                }
+                                .dark .form-input:focus {
+                                    border-color: #50c878;
+                                    box-shadow: 0 0 0 3px rgba(80, 200, 120, 0.2);
+                                }
+                            `}</style>
+                        </form>
+
+                        {/* Direct Links */}
+                        <div className="space-y-6 lg:mt-8">
+                            <h3 className={`text-2xl font-bold mb-4 ${TEXT_PRIMARY}`}>Find Me Online</h3>
+                            {[
+                                { icon: Mail, label: "Email Me", link: "mailto:madhuri@designer.com", handle: "madhuri@designer.com" },
+                                { icon: Briefcase, label: "LinkedIn", link: "#", handle: "@madhuridesign" },
+                                { icon: Code, label: "Behance", link: "#", handle: "/MadhuriBehance" },
+                                { icon: Instagram, label: "Instagram Portfolio", link: "#", handle: "@madhuri.visuals" }
+                            ].map((link, index) => (
+                                <a 
+                                    key={index} 
+                                    href={link.link} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="flex items-center p-4 rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-lg bg-gray-100 dark:bg-gray-800"
+                                >
+                                    <link.icon className={`w-7 h-7 mr-4 ${THEME_ACCENT} shrink-0`} />
+                                    <div>
+                                        <p className={`font-semibold text-lg ${TEXT_PRIMARY}`}>{link.label}</p>
+                                        <p className={`text-sm ${TEXT_SECONDARY}`}>{link.handle}</p>
+                                    </div>
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+                </ScrollAnimate>
+            </main>
+
+            {/* Floating "Let's Talk" CTA */}
+            {activeId !== 'contact' && (
+                <button
+                    onClick={() => scrollToSection('contact')}
+                    className={`fixed bottom-6 right-6 lg:bottom-10 lg:right-10 px-6 py-3 rounded-full font-bold text-lg shadow-2xl transition-all duration-300 transform ${PRIMARY_ACCENT} hover:scale-[1.05] z-50`}
+                >
+                    Let's Talk
+                </button>
+            )}
+
+            {/* Case Study Lightbox */}
+            <Lightbox 
+                content={lightboxContent} 
+                setLightboxContent={setLightboxContent} 
+            />
+
+            {/* FOOTER */}
+            <footer className="mt-20 py-8 border-t border-gray-200 dark:border-gray-800 ${TEXT_SECONDARY} text-center">
+                <p className="mb-2">Madhuri &copy; {new Date().getFullYear()}</p>
+                <p className="text-sm">Designed with love & a lot of coffee. Crafted in React + Tailwind.</p>
+            </footer>
+        </div>
+    );
+}
